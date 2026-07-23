@@ -50,7 +50,7 @@
   @media(max-width:760px){ nav .links{display:none} }
 
   /* ---------- hero ---------- */
-  header.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:flex-end;
+  header.hero{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;justify-content:flex-end;
     padding:0;position:relative;overflow:hidden}
   .hero-reel{position:absolute;inset:0;z-index:0}
   .hero-reel video{width:100%;height:100%;object-fit:cover;filter:grayscale(1) contrast(1.04);display:block}
@@ -140,12 +140,12 @@
     border-bottom:1px solid var(--line-2);padding:0 0 3px;margin-top:-2px}
   .win .replay:hover{color:var(--ink);border-color:var(--ink)}
   .answers{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}
-  .answers .a{position:relative;border:1px solid var(--line);border-radius:14px;padding:18px 18px 30px;min-height:132px;transition:border-color .3s,background .3s}
+  .answers .a{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;padding:18px;min-height:138px;transition:border-color .3s,background .3s}
   .answers .a.lit{border-color:var(--ink)}
   .answers .a .k{font-size:11px;letter-spacing:.16em;font-weight:700;color:var(--mut);text-transform:uppercase;margin-bottom:10px}
-  .answers .a .v{font-size:14px;font-weight:500;color:var(--ink);min-height:20px;line-height:1.4}
+  .answers .a .v{font-size:14px;font-weight:500;color:var(--ink);line-height:1.4}
   .answers .a .v.empty{color:var(--line-2);font-weight:600;letter-spacing:.1em}
-  .answers .a .src{position:absolute;left:18px;right:18px;bottom:10px;font-size:9.5px;letter-spacing:.02em;color:var(--mut);font-weight:500}
+  .answers .a .src{margin-top:auto;padding-top:12px;font-size:9.5px;letter-spacing:.02em;color:var(--mut);font-weight:500}
   @media(max-width:760px){ .answers{grid-template-columns:1fr 1fr} }
 
   /* ---------- Q&A streaming (renamed) ---------- */
@@ -165,11 +165,14 @@
   @keyframes blink{50%{opacity:0}}
   .word{display:inline-block}
   @media(max-width:600px){
-    .stream-grid{gap:12px}
-    .cell{aspect-ratio:auto;max-height:none;min-height:0;padding:15px}
-    .cell .tag{margin-bottom:10px}
-    .cell .q{margin-bottom:10px}
-    .cell .a{flex:0 1 auto}
+    .stream-grid{gap:14px}
+    .cell{aspect-ratio:auto;max-height:none;min-height:185px;padding:20px}
+    .cell .a{flex:1}
+    /* taller game field so blocks sit further apart */
+    .game-stage canvas{height:72vh;max-height:600px}
+    /* equal-width stacked hero buttons */
+    .hero .hero-cta{flex-direction:column;align-items:stretch;gap:12px}
+    .hero .btn{justify-content:center;width:100%}
   }
 
   /* ---------- why ---------- */
@@ -216,9 +219,7 @@
 </nav>
 
 <header class="hero" id="top">
-  <div class="hero-reel"><video autoplay muted loop playsinline preload="auto">
-    <source src="car.mp4" type="video/mp4" />
-  </video></div>
+  <div class="hero-reel"><video src="car.mp4" autoplay muted loop playsinline webkit-playsinline preload="auto" disableremoteplayback></video></div>
   <div class="hero-scrim"></div>
   <div class="hero-inner">
     <h1 class="title">Дизайн, код и продвижение <em>в одних руках</em>.</h1>
@@ -327,6 +328,21 @@
   window.addEventListener('scroll',onScroll,{passive:true}); onScroll();
 })();
 
+/* ============ HERO VIDEO: force muted autoplay ============ */
+(function(){
+  var v=document.querySelector('.hero-reel video'); if(!v) return;
+  v.muted=true; v.defaultMuted=true; v.setAttribute('muted','');
+  v.playsInline=true;
+  function tryPlay(){ var p=v.play(); if(p&&p.catch) p.catch(function(){}); }
+  tryPlay();
+  v.addEventListener('loadeddata',tryPlay);
+  v.addEventListener('canplay',tryPlay);
+  document.addEventListener('visibilitychange',function(){ if(!document.hidden) tryPlay(); });
+  ['pointerdown','touchstart','scroll','keydown'].forEach(function(ev){
+    window.addEventListener(ev,tryPlay,{once:true,passive:true});
+  });
+})();
+
 /* ============ TEXT-STREAMING Q&A (typewriter + decode) ============ */
 (function(){
   var grid=document.getElementById('streamGrid');
@@ -419,11 +435,12 @@
     bandPos.x=anchor.x; bandPos.y=anchor.y; bandReleased=false;
     // build targets resting on ground
     var s=Math.max(36,Math.min(52,W*0.043));
-    // scattered positions: fx = centre as fraction of width, fh = height above ground (in block units)
-    var POS=[{fx:0.42,fh:0.0},{fx:0.52,fh:2.7},{fx:0.61,fh:1.1},{fx:0.72,fh:3.2},{fx:0.82,fh:0.5},{fx:0.91,fh:2.1}];
+    // scattered positions: fx = centre (fraction of width), fy = height (fraction of playable height above ground)
+    var POS=[{fx:0.42,fy:0.03},{fx:0.55,fy:0.50},{fx:0.62,fy:0.20},{fx:0.73,fy:0.66},{fx:0.83,fy:0.10},{fx:0.90,fy:0.38}];
+    var avail=Math.max(120, groundY-46-s);
     targets=DATA.map(function(d,i){
       var p=POS[i%POS.length];
-      var x=p.fx*W - s/2, y=groundY - s - p.fh*s;
+      var x=p.fx*W - s/2, y=groundY - s - p.fy*avail;
       return {x:x, y:y, w:s, h:s, hit:targets[i]?targets[i].hit:false,
               vy:0,vx:0,rot:0,vr:0,fallen:targets[i]?targets[i].fallen:false,k:d.k};
     });
