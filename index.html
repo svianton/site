@@ -139,7 +139,7 @@
   .win .replay{background:none;border:none;font:inherit;font-size:13px;font-weight:600;color:var(--mut);
     border-bottom:1px solid var(--line-2);padding:0 0 3px;margin-top:-2px}
   .win .replay:hover{color:var(--ink);border-color:var(--ink)}
-  .answers{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}
+  .answers{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:18px}
   .answers .a{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;padding:18px;min-height:138px;transition:border-color .3s,background .3s}
   .answers .a.lit{border-color:var(--ink)}
   .answers .a .k{font-size:11px;letter-spacing:.16em;font-weight:700;color:var(--mut);text-transform:uppercase;margin-bottom:10px}
@@ -165,14 +165,15 @@
   @keyframes blink{50%{opacity:0}}
   .word{display:inline-block}
   @media(max-width:600px){
-    .stream-grid{gap:14px}
-    .cell{aspect-ratio:auto;max-height:none;min-height:185px;padding:20px}
-    .cell .a{flex:1}
+    .stream-grid{grid-template-columns:1fr 1fr;gap:12px}
+    .cell{aspect-ratio:auto;max-height:none;min-height:172px;padding:14px}
+    .cell .a{flex:1;font-size:12.5px}
+    .cell .q{font-size:11.5px;padding:7px 10px}
     /* taller game field so blocks sit further apart */
     .game-stage canvas{height:72vh;max-height:600px}
-    /* equal-width stacked hero buttons */
-    .hero .hero-cta{flex-direction:column;align-items:stretch;gap:12px}
-    .hero .btn{justify-content:center;width:100%}
+    /* smaller, left-aligned hero buttons */
+    .hero .hero-cta{flex-direction:column;align-items:flex-start;gap:10px}
+    .hero .btn{width:54%;justify-content:center;padding:13px 12px;font-size:12.5px}
   }
 
   /* ---------- why ---------- */
@@ -184,7 +185,7 @@
   .why-grid .c h3{font-size:23px;font-weight:700;letter-spacing:-.02em;margin-bottom:10px}
   .why-grid .c p{font-size:14px;color:var(--mut)}
   .why-grid .c:hover p{color:#bdbdbd}
-  @media(max-width:820px){ .why-grid{grid-template-columns:1fr} }
+  @media(max-width:820px){ .why-grid{grid-template-columns:1fr 1fr} .why-grid .c{padding:24px 18px;min-height:180px} .why-grid .c h3{font-size:18px} }
 
   /* ---------- contact ---------- */
   .contact{text-align:center;padding-bottom:clamp(80px,11vw,150px)}
@@ -193,7 +194,7 @@
   .contact a.mail{display:inline-block;margin-top:34px;font-size:clamp(18px,3vw,34px);font-weight:600;
     border-bottom:2px solid var(--ink);padding-bottom:6px;transition:opacity .3s}
   .contact a.mail:hover{opacity:.5}
-  .contact .socials{margin-top:40px;display:flex;gap:26px;justify-content:center;font-size:13px;font-weight:600;letter-spacing:.04em}
+  .contact .socials{margin-top:40px;display:flex;flex-direction:column;align-items:center;gap:14px;font-size:13px;font-weight:600;letter-spacing:.04em}
   .contact .socials a{color:var(--mut);transition:color .25s}
   .contact .socials a:hover{color:var(--ink)}
 
@@ -266,7 +267,7 @@
   <div class="game-stage reveal" id="stage">
     <canvas id="gameCanvas"></canvas>
     <div class="game-hud">
-      <span id="hudInfo">Сбито: 0 / 6 · оттяни и отпусти</span>
+      <span id="hudInfo">Сбито: 0 / 4 · оттяни и отпусти</span>
       <button class="reset" id="resetBtn">Сброс</button>
     </div>
     <div class="win" id="win">
@@ -300,6 +301,7 @@
     <a class="mail" href="mailto:svianton31@gmail.com">svianton31@gmail.com</a>
     <div class="socials">
       <a href="https://t.me/sviridovantony" target="_blank" rel="noopener">Telegram ↗</a>
+      <a href="https://wa.me/79055540258" target="_blank" rel="noopener">WhatsApp ↗</a>
     </div>
   </div>
 </section>
@@ -328,12 +330,21 @@
   window.addEventListener('scroll',onScroll,{passive:true}); onScroll();
 })();
 
-/* ============ HERO VIDEO: force muted autoplay ============ */
+/* ============ HERO VIDEO: pick source by screen + force muted autoplay ============ */
 (function(){
   var v=document.querySelector('.hero-reel video'); if(!v) return;
   v.muted=true; v.defaultMuted=true; v.setAttribute('muted','');
   v.playsInline=true;
   function tryPlay(){ var p=v.play(); if(p&&p.catch) p.catch(function(){}); }
+  // vertical clip on phones, wide clip on desktop
+  var mq=window.matchMedia('(max-width:600px)');
+  function pickSrc(){
+    var want=mq.matches ? 'car_mobile.mp4' : 'car.mp4';
+    if(!(v.currentSrc||v.src).endsWith(want)){ v.src=want; v.load(); }
+    tryPlay();
+  }
+  pickSrc();
+  if(mq.addEventListener) mq.addEventListener('change',pickSrc); else if(mq.addListener) mq.addListener(pickSrc);
   tryPlay();
   v.addEventListener('loadeddata',tryPlay);
   v.addEventListener('canplay',tryPlay);
@@ -405,10 +416,8 @@
   var DATA=[
     {k:'01', v:'Первое впечатление о сайте формируется за 0,05 секунды.', src:'Lindgaard et al., 2006'},
     {k:'02', v:'75% людей судят о доверии к бизнесу по дизайну его сайта.', src:'Stanford Web Credibility'},
-    {k:'03', v:'Каждый $1, вложенный в UX-дизайн, возвращает до $100.', src:'Forrester Research'},
-    {k:'04', v:'Задержка загрузки в 1 секунду — до −7% к конверсии.', src:'Akamai'},
-    {k:'05', v:'В среднем человек читает лишь ~20% текста на странице.', src:'Nielsen Norman Group'},
-    {k:'06', v:'Больше половины визитов в вебе — со смартфонов.', src:'Statista'}
+    {k:'03', v:'В среднем человек читает лишь ~20% текста на странице.', src:'Nielsen Norman Group'},
+    {k:'04', v:'Больше половины визитов в вебе — со смартфонов.', src:'Statista'}
   ];
 
   // answers DOM slots
@@ -436,7 +445,7 @@
     // build targets resting on ground
     var s=Math.max(36,Math.min(52,W*0.043));
     // scattered positions: fx = centre (fraction of width), fy = height (fraction of playable height above ground)
-    var POS=[{fx:0.42,fy:0.03},{fx:0.55,fy:0.50},{fx:0.62,fy:0.20},{fx:0.73,fy:0.66},{fx:0.83,fy:0.10},{fx:0.90,fy:0.38}];
+    var POS=[{fx:0.42,fy:0.05},{fx:0.58,fy:0.52},{fx:0.72,fy:0.16},{fx:0.90,fy:0.42}];
     var avail=Math.max(120, groundY-46-s);
     targets=DATA.map(function(d,i){
       var p=POS[i%POS.length];
@@ -502,7 +511,7 @@
   document.getElementById('resetBtn').addEventListener('click',resetGame);
   document.getElementById('replayBtn').addEventListener('click',resetGame);
 
-  function updateHud(){ hud.textContent='Сбито: '+hits+' / 6 · оттяни и отпусти'; }
+  function updateHud(){ hud.textContent='Сбито: '+hits+' / 4 · оттяни и отпусти'; }
   function reveal(i){
     var t=targets[i]; if(t.hit) return; t.hit=true; t.vy=-5; t.vx=2+Math.random()*2; t.vr=(Math.random()-0.5)*0.4;
     hits++; updateHud();
@@ -510,7 +519,7 @@
     v.classList.remove('empty'); v.textContent=DATA[i].v;
     var sr=el.querySelector('.src'); if(sr) sr.textContent='источник: '+DATA[i].src;
     el.classList.add('lit');
-    if(hits>=6) setTimeout(function(){winEl.classList.add('show');},500);
+    if(hits>=4) setTimeout(function(){winEl.classList.add('show');},500);
   }
 
   function step(){
